@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { 
   login, 
-  loginDemo,
   logout, 
   getAllUsers, 
   updateUserConfig, 
@@ -44,10 +43,9 @@ import {
 const AuthContext = React.createContext<{
   user: User | null;
   loginUser: (u: string, p: string) => Promise<void>;
-  loginUserDemo: () => Promise<void>;
   logoutUser: () => void;
   isLoadingAuth: boolean;
-}>({ user: null, loginUser: async () => {}, loginUserDemo: async () => {}, logoutUser: () => {}, isLoadingAuth: true });
+}>({ user: null, loginUser: async () => {}, logoutUser: () => {}, isLoadingAuth: true });
 
 // --- Protected Route Wrapper
 const ProtectedRoute = ({ children, requiredRole }: { children?: React.ReactNode, requiredRole?: UserRole }) => {
@@ -74,7 +72,7 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { loginUser, loginUserDemo } = React.useContext(AuthContext);
+  const { loginUser } = React.useContext(AuthContext);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,17 +86,6 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   };
-
-  const handleDemo = async () => {
-    setIsLoading(true);
-    try {
-      await loginUserDemo();
-    } catch (e: any) {
-      setError(e.message || "Erro ao iniciar demo");
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-brand-900 font-sans p-4 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80')] bg-cover bg-center bg-no-repeat bg-blend-multiply">
@@ -158,9 +145,6 @@ const LoginPage = () => {
             <Button type="submit" className="w-full py-4 text-lg font-bold shadow-lg shadow-brand-500/30" size="lg" isLoading={isLoading}>
               ENTRAR
             </Button>
-            
-            <Button type="button" onClick={handleDemo} className="w-full" variant="outline">Testar com Usuário Admin</Button>
-
           </form>
         </div>
       </div>
@@ -791,18 +775,13 @@ export default function App() {
     setUser(userData);
   };
 
-  const loginUserDemo = async () => {
-    const userData = await loginDemo();
-    setUser(userData);
-  }
-
   const logoutUser = async () => {
     await logout();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loginUser, loginUserDemo, logoutUser, isLoadingAuth }}>
+    <AuthContext.Provider value={{ user, loginUser, logoutUser, isLoadingAuth }}>
       <HashRouter>
         <Routes>
           <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />

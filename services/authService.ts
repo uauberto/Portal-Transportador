@@ -50,11 +50,6 @@ export const login = async (email: string, password: string): Promise<User> => {
   return user;
 };
 
-export const loginDemo = async (): Promise<User> => {
-  // O modo demo agora loga com o usuário admin do banco de dados.
-  return login('admin@portal.com', '123');
-};
-
 export const logout = async (): Promise<void> => {
   clearSession();
   // Em um app real, você pode querer invalidar o token no backend aqui.
