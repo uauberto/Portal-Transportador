@@ -1,13 +1,15 @@
+require('dotenv').config(); // Carrega as variáveis de ambiente do arquivo .env
 const express = require('express');
 const cors = require('cors');
+const bcrypt = require('bcrypt');
 const db = require('./db.config');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
-app.use(cors()); // Habilita CORS para permitir requisições do frontend
-app.use(express.json()); // Habilita o parsing de JSON no corpo das requisições
+app.use(cors());
+app.use(express.json());
 
 // --- Rota de Teste ---
 app.get('/api', (req, res) => {
@@ -26,17 +28,18 @@ app.post('/api/login', async (req, res) => {
     const user = rows[0];
 
     if (!user) {
-      return res.status(404).json({ message: 'Usuário não encontrado.' });
+      return res.status(401).json({ message: 'Credenciais inválidas.' }); // Mensagem genérica por segurança
     }
 
-    // IMPORTANTE: Em um ambiente real, NUNCA compare senhas em texto plano.
-    // Use uma biblioteca como 'bcrypt' para comparar hashes.
-    if (user.password !== password) {
-      return res.status(401).json({ message: 'Senha incorreta.' });
+    // Compara a senha fornecida com o hash armazenado no banco
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Credenciais inválidas.' });
     }
 
-    // Remove a senha do objeto de usuário antes de enviar a resposta
-    const { password: _, ...safeUser } = user;
+    // Remove o hash da senha do objeto de usuário antes de enviar a resposta
+    const { password_hash, ...safeUser } = user;
     safeUser.token = 'local-jwt-token-placeholder'; // Token de exemplo
 
     res.json(safeUser);
@@ -60,8 +63,9 @@ app.get('/api/nfes', async (req, res) => {
       conditions.push(`"carrierId" = $${params.length}`);
     }
     if (issueDate) {
-      params.push(`${issueDate}%`);
-      conditions.push(`"issuedAt"::text ILIKE $${params.length}`);
+        // Converte a data para garantir que o fuso horário não afete a busca
+        params.push(issueDate);
+        conditions.push(`"issuedAt"::date = $${params.length}::date`);
     }
     if (number) {
       params.push(`%${number}%`);
