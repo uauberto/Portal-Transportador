@@ -1,103 +1,103 @@
-import { db } from './mockData';
 import { User, UserRole, Transportadora } from '../types';
 
+const API_URL = 'http://localhost:3001/api';
+const SESSION_KEY = 'portal_session';
+
+// --- Helper for API calls ---
+async function apiFetch(endpoint: string, options: RequestInit = {}) {
+  const headers = new Headers(options.headers || {});
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(errorData.message || 'Ocorreu um erro na comunicação com o servidor.');
+  }
+  
+  // Handle empty responses for DELETE, etc.
+  if (response.status === 204) {
+      return null;
+  }
+
+  return response.json();
+}
+
+// --- Session Management ---
+const setSession = (user: User) => {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+};
+
+const clearSession = () => {
+  localStorage.removeItem(SESSION_KEY);
+};
+
+// --- Authentication Service ---
 export const login = async (email: string, password: string): Promise<User> => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  const user = db.findUser(email);
-
-  if (!user) {
-    throw new Error('Usuário não encontrado.');
+  const user = await apiFetch('/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  
+  if (user && user.token) {
+    setSession(user);
   }
-
-  // In a real app, never store or compare plain text passwords.
-  if (user.password !== password) {
-    throw new Error('Senha incorreta.');
-  }
-
-  const safeUser: User = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    carrierId: user.carrierId,
-    token: 'local-jwt-token'
-  };
-
-  db.setSession(safeUser);
-  return safeUser;
+  return user;
 };
 
 export const loginDemo = async (): Promise<User> => {
+  // O modo demo agora loga com o usuário admin do banco de dados.
   return login('admin@portal.com', '123');
 };
 
 export const logout = async (): Promise<void> => {
-  db.clearSession();
+  clearSession();
+  // Em um app real, você pode querer invalidar o token no backend aqui.
 };
 
-export const getCurrentSession = async (): Promise<User | null> => {
-  return db.getSession();
+export const getCurrentSession = (): User | null => {
+  const sessionData = localStorage.getItem(SESSION_KEY);
+  return sessionData ? JSON.parse(sessionData) : null;
 };
 
-// --- ADMIN USER SERVICES ---
-
+// --- Admin User Services ---
 export const getAllUsers = async (): Promise<User[]> => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  return db.getUsers().map(u => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    carrierId: u.carrierId
-  }));
+  return await apiFetch('/users');
 };
 
 export const updateUserConfig = async (userId: string, updates: Partial<User>): Promise<User> => {
-  const users = db.getUsers();
-  const user = users.find(u => u.id === userId);
-  
-  if (!user) throw new Error('User not found');
-
-  const updatedUser = { ...user, ...updates };
-  db.saveUser(updatedUser);
-
-  return {
-    id: updatedUser.id,
-    name: updatedUser.name,
-    email: updatedUser.email,
-    role: updatedUser.role,
-    carrierId: updatedUser.carrierId
-  };
+  return await apiFetch(`/users/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
 };
 
-// --- CARRIER (TRANSPORTADORA) SERVICES ---
-
+// --- Carrier (Transportadora) Services ---
 export const getAllCarriers = async (): Promise<Transportadora[]> => {
-   await new Promise(resolve => setTimeout(resolve, 300));
-   return db.getCarriers();
+   return await apiFetch('/carriers');
 };
 
 export const createCarrier = async (data: Omit<Transportadora, 'id'>): Promise<Transportadora> => {
-  const newCarrier: Transportadora = {
-    ...data,
-    id: Math.random().toString(36).substr(2, 9)
-  };
-  db.saveCarrier(newCarrier);
-  return newCarrier;
+  return await apiFetch('/carriers', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 };
 
 export const updateCarrier = async (id: string, data: Partial<Transportadora>): Promise<Transportadora> => {
-  const carriers = db.getCarriers();
-  const existing = carriers.find(c => c.id === id);
-  if (!existing) throw new Error('Carrier not found');
-
-  const updated = { ...existing, ...data };
-  db.saveCarrier(updated);
-  return updated;
+  return await apiFetch(`/carriers/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
 };
 
 export const deleteCarrier = async (id: string): Promise<void> => {
-  db.deleteCarrier(id);
+  await apiFetch(`/carriers/${id}`, {
+    method: 'DELETE',
+  });
 };

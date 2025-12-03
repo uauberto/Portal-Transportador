@@ -69,7 +69,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children?: React.ReactNode
 // --- Components Pages
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('admin@portal.com'); // Pre-fill for convenience in local mode
+  const [email, setEmail] = useState('admin@portal.com'); // Pre-fill for convenience
   const [password, setPassword] = useState('123'); // Pre-fill for convenience
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -93,8 +93,8 @@ const LoginPage = () => {
     setIsLoading(true);
     try {
       await loginUserDemo();
-    } catch (e) {
-      setError("Erro ao iniciar demo");
+    } catch (e: any) {
+      setError(e.message || "Erro ao iniciar demo");
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +103,6 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-brand-900 font-sans p-4 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80')] bg-cover bg-center bg-no-repeat bg-blend-multiply">
       
-      {/* Brand Header */}
       <div className="text-center mb-8 animate-slide-up">
         <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/10 backdrop-blur-md mb-6 shadow-2xl border border-white/20">
            <Truck className="text-white" size={48} />
@@ -112,17 +111,16 @@ const LoginPage = () => {
         <p className="text-blue-200 mt-2 font-light text-lg">Logística segura e eficiente</p>
       </div>
 
-      {/* Login Card */}
       <div className="w-full max-w-md bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <div className="p-10">
-          <h3 className="text-2xl font-bold text-gray-800 mb-8 text-center font-display">Acesso Local</h3>
+          <h3 className="text-2xl font-bold text-gray-800 mb-8 text-center font-display">Acesso ao Portal</h3>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email</label>
               <input 
                 type="email" 
-                placeholder="admin@portal.com"
+                placeholder="seu@email.com"
                 className="w-full px-4 py-3 bg-gray-50 text-base text-gray-900 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-600 focus:bg-white focus:border-transparent outline-none transition duration-200"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -152,7 +150,7 @@ const LoginPage = () => {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-4 rounded-lg flex items-center gap-2 animate-pulse">
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-4 rounded-lg flex items-center gap-2">
                  <Info size={18} /> {error}
               </div>
             )}
@@ -161,11 +159,7 @@ const LoginPage = () => {
               ENTRAR
             </Button>
             
-            <div className="text-center text-xs text-gray-400 mt-2">
-              <p>Credenciais Padrão:</p>
-              <p>Admin: admin@portal.com / 123</p>
-              <p>Transp: user@transrapido.com / 123</p>
-            </div>
+            <Button type="button" onClick={handleDemo} className="w-full" variant="outline">Testar com Usuário Admin</Button>
 
           </form>
         </div>
@@ -186,6 +180,7 @@ const AdminUserManagement = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([getAllUsers(), getAllCarriers()])
       .then(([usersData, carriersData]) => {
         setUsers(usersData);
@@ -195,13 +190,25 @@ const AdminUserManagement = () => {
   }, []);
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
+    const originalUsers = users;
     setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
-    await updateUserConfig(userId, { role: newRole });
+    try {
+      await updateUserConfig(userId, { role: newRole });
+    } catch (err) {
+      alert("Falha ao atualizar a função do usuário.");
+      setUsers(originalUsers);
+    }
   };
 
   const handleCarrierChange = async (userId: string, carrierId: string) => {
+     const originalUsers = users;
      setUsers(users.map(u => u.id === userId ? { ...u, carrierId: carrierId || undefined } : u));
-     await updateUserConfig(userId, { carrierId: carrierId || undefined });
+     try {
+       await updateUserConfig(userId, { carrierId: carrierId || undefined });
+     } catch (err) {
+       alert("Falha ao vincular a transportadora.");
+       setUsers(originalUsers);
+     }
   };
 
   return (
@@ -249,7 +256,7 @@ const AdminUserManagement = () => {
                         onChange={(e) => handleCarrierChange(u.id, e.target.value)}
                         className="border border-gray-300 rounded-md px-3 py-2 w-full max-w-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none text-sm bg-white"
                       >
-                         <option value="">-- Selecione --</option>
+                         <option value="">-- Nenhuma --</option>
                          {carriers.map(c => (
                            <option key={c.id} value={c.id}>{c.name}</option>
                          ))}
@@ -287,7 +294,6 @@ const AdminCarrierManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Form State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formName, setFormName] = useState('');
   const [formCnpj, setFormCnpj] = useState('');
@@ -395,7 +401,6 @@ const AdminCarrierManagement = () => {
         </table>
       </div>
 
-      {/* MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-scale-in">
@@ -404,13 +409,12 @@ const AdminCarrierManagement = () => {
              </h3>
              <form onSubmit={handleSave} className="space-y-5">
                <div>
-                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nome da Transportadora</label>
+                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nome</label>
                  <input 
                    type="text" 
                    value={formName} 
                    onChange={e => setFormName(e.target.value)}
                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition"
-                   placeholder="Ex: TransRápido Logística"
                    required
                  />
                </div>
@@ -421,7 +425,6 @@ const AdminCarrierManagement = () => {
                    value={formCnpj} 
                    onChange={e => setFormCnpj(e.target.value)}
                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition"
-                   placeholder="00.000.000/0000-00"
                    required
                  />
                </div>
@@ -444,7 +447,6 @@ const DashboardLayout = () => {
   const { user, logoutUser } = React.useContext(AuthContext);
   const location = useLocation();
 
-  // Navigation Items
   const navItems = [
     { label: 'Documentos Fiscais', path: '/dashboard', icon: Package, adminOnly: false },
   ];
@@ -459,16 +461,13 @@ const DashboardLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans">
-      {/* Sidebar Dark */}
       <aside className="bg-dark-900 text-slate-300 w-full md:w-72 flex-shrink-0 flex flex-col shadow-2xl z-20">
         
-        {/* Brand Header */}
         <div className="h-20 flex items-center px-6 bg-dark-950/50 border-b border-dark-800 shadow-sm backdrop-blur-sm">
           <Truck className="text-brand-500 mr-3 flex-shrink-0" size={28} />
           <span className="font-display font-bold text-base text-white tracking-wide uppercase leading-tight">Portal do<br/>Transportador</span>
         </div>
 
-        {/* User Quick Info */}
         <div className="px-6 py-8 border-b border-dark-800/50 bg-gradient-to-b from-dark-800 to-transparent">
            <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest mb-2">Conectado como</p>
            <div className="flex items-center gap-3 text-white text-base font-medium truncate">
@@ -477,7 +476,6 @@ const DashboardLayout = () => {
            </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 py-8 space-y-1 overflow-y-auto">
            {navItems.map((item, idx) => {
              const isActive = location.pathname === item.path;
@@ -498,7 +496,6 @@ const DashboardLayout = () => {
            })}
         </nav>
 
-        {/* Footer */}
         <div className="p-4 border-t border-dark-800 bg-dark-950/30">
            <button onClick={logoutUser} className="flex items-center gap-3 text-sm text-slate-400 hover:text-white transition w-full px-4 py-3 rounded-lg hover:bg-red-500/10 hover:text-red-400">
              <LogOut size={18} /> Sair
@@ -506,10 +503,8 @@ const DashboardLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         
-        {/* Top Header */}
         <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10 sticky top-0">
            <div className="flex items-center text-gray-400 text-sm font-medium">
               <span className="mr-2">Portal</span> <ChevronRight size={14} /> <span className="ml-2 text-gray-900">
@@ -523,25 +518,12 @@ const DashboardLayout = () => {
            </div>
         </header>
 
-        {/* Scrollable Content */}
         <main className="flex-1 overflow-y-auto bg-gray-50 relative">
           <Routes>
             <Route path="/" element={<NFeList user={user} />} />
-            <Route path="/users" element={
-              <ProtectedRoute requiredRole={UserRole.ADMIN}>
-                 <AdminUserManagement />
-              </ProtectedRoute>
-            } />
-             <Route path="/carriers" element={
-              <ProtectedRoute requiredRole={UserRole.ADMIN}>
-                 <AdminCarrierManagement />
-              </ProtectedRoute>
-            } />
-             <Route path="/sql" element={
-              <ProtectedRoute requiredRole={UserRole.ADMIN}>
-                 <AdminSqlScripts />
-              </ProtectedRoute>
-            } />
+            <Route path="/users" element={<AdminUserManagement />} />
+             <Route path="/carriers" element={<AdminCarrierManagement />} />
+             <Route path="/sql" element={<AdminSqlScripts />} />
           </Routes>
         </main>
       </div>
@@ -566,9 +548,6 @@ const NFeList = ({ user }: { user: User | null }) => {
 
   useEffect(() => {
     if (user) {
-      // Logic for filtering by carrier
-      // If Admin, pass 'ALL' to see everything, or specific ID. 
-      // For local simplicity, Admin sees everything. Carrier sees their own.
       const targetCarrierId = user.role === UserRole.ADMIN ? 'ALL' : user.carrierId;
       
       setLoading(true);
@@ -578,7 +557,10 @@ const NFeList = ({ user }: { user: User | null }) => {
         route: filterRoute 
       })
         .then(setNfes)
-        .catch(e => console.error(e))
+        .catch(e => {
+            console.error(e);
+            alert("Falha ao carregar documentos: " + e.message);
+        })
         .finally(() => setLoading(false));
     }
   }, [user, filterDate, filterNumber, filterRoute]);
@@ -670,7 +652,7 @@ const NFeList = ({ user }: { user: User | null }) => {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Data de Emissão</label>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Data</label>
               <div className="relative group">
                 <Calendar className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-brand-500 transition-colors" size={18} />
                 <input 
@@ -682,7 +664,7 @@ const NFeList = ({ user }: { user: User | null }) => {
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Número da Nota</label>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Número</label>
               <div className="relative group">
                 <FileText className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-brand-500 transition-colors" size={18} />
                 <input 
@@ -695,12 +677,12 @@ const NFeList = ({ user }: { user: User | null }) => {
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Rota / Destino</label>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Rota</label>
               <div className="relative group">
                 <MapPin className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-brand-500 transition-colors" size={18} />
                 <input 
                   type="text" 
-                  placeholder="Ex: SP-RJ ou São Paulo" 
+                  placeholder="Ex: SP-RJ" 
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white focus:border-transparent outline-none transition-all"
                   value={filterRoute}
                   onChange={e => setFilterRoute(e.target.value)}
@@ -710,7 +692,6 @@ const NFeList = ({ user }: { user: User | null }) => {
           </div>
         </div>
 
-        {/* Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -733,7 +714,7 @@ const NFeList = ({ user }: { user: User | null }) => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {loading ? (
-                  <tr><td colSpan={6} className="p-16 text-center text-gray-400 flex flex-col items-center"><div className="animate-spin h-6 w-6 border-2 border-brand-500 border-t-transparent rounded-full mb-2"></div>Carregando documentos...</td></tr>
+                  <tr><td colSpan={6} className="p-16 text-center text-gray-400 flex flex-col items-center"><div className="animate-spin h-6 w-6 border-2 border-brand-500 border-t-transparent rounded-full mb-2"></div>Carregando...</td></tr>
                 ) : nfes.length === 0 ? (
                   <tr><td colSpan={6} className="p-16 text-center text-gray-400">Nenhum documento encontrado.</td></tr>
                 ) : (
@@ -794,19 +775,15 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
-  // Check Local Session on mount
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const currentUser = await getCurrentSession();
-        setUser(currentUser);
-      } catch (e) {
-        console.error("Auth check failed", e);
-      } finally {
-        setIsLoadingAuth(false);
-      }
-    };
-    initAuth();
+    try {
+      const currentUser = getCurrentSession();
+      setUser(currentUser);
+    } catch (e) {
+      console.error("Auth check failed", e);
+    } finally {
+      setIsLoadingAuth(false);
+    }
   }, []);
 
   const loginUser = async (u: string, p: string) => {
