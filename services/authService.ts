@@ -1,40 +1,7 @@
-import { User, UserRole, Transportadora } from '../types';
+import { User, Transportadora } from '../types';
+import { apiFetch } from './api';
 
-const API_URL = 'http://localhost:3001/api';
 const SESSION_KEY = 'portal_session';
-
-// --- Helper for API calls ---
-async function apiFetch(endpoint: string, options: RequestInit = {}) {
-  try {
-    const headers = new Headers(options.headers || {});
-    if (!headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
-    }
-
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(errorData.message || 'Ocorreu um erro na comunicação com o servidor.');
-    }
-    
-    // Handle empty responses for DELETE, etc.
-    if (response.status === 204) {
-        return null;
-    }
-
-    return response.json();
-  } catch (error: any) {
-    if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('Não foi possível conectar ao servidor. Verifique se o backend está rodando na porta 3001.');
-    }
-    // Re-throw other errors
-    throw error;
-  }
-}
 
 // --- Session Management ---
 const setSession = (user: User) => {
@@ -60,7 +27,7 @@ export const login = async (email: string, password: string): Promise<User> => {
 
 export const logout = async (): Promise<void> => {
   clearSession();
-  // Em um app real, você pode querer invalidar o token no backend aqui.
+  // In a real app, you might want to invalidate the token on the backend here.
 };
 
 export const getCurrentSession = (): User | null => {

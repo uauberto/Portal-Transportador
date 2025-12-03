@@ -1,13 +1,10 @@
 import { NFe, NFeFilter } from '../types';
+import { apiFetch } from './api';
 import JSZip from 'jszip';
-
-const API_URL = 'http://localhost:3001/api';
 
 export const getNFes = async (carrierId: string, filters: NFeFilter): Promise<NFe[]> => {
   const params = new URLSearchParams();
   
-  // Se o usuário é admin, 'ALL' é passado. Se for transportadora, seu ID é passado.
-  // O backend decide o que fazer com essa informação.
   if (carrierId) {
     params.append('carrierId', carrierId);
   }
@@ -22,11 +19,8 @@ export const getNFes = async (carrierId: string, filters: NFeFilter): Promise<NF
     params.append('route', filters.route);
   }
 
-  const response = await fetch(`${API_URL}/nfes?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error('Falha ao buscar NF-es do servidor.');
-  }
-  return await response.json();
+  // Uses the centralized apiFetch for consistent error handling.
+  return await apiFetch(`/nfes?${params.toString()}`);
 };
 
 /**
@@ -127,11 +121,13 @@ export const generatePdfZip = async (nfes: NFe[]): Promise<Blob> => {
     
     for (const nfe of nfes) {
         try {
+            // Small delay to avoid hitting API rate limits when downloading many PDFs.
             if (nfes.length > 1) await new Promise(r => setTimeout(r, 500)); 
             const blob = await fetchPdfBlob(nfe.xmlContent);
             zip.file(`DANFE_${nfe.number}.pdf`, blob);
         } catch (error: any) {
             console.error(`Erro ao gerar PDF para nota ${nfe.number}:`, error);
+            // Add a text file to the zip indicating the error for that specific NFe.
             zip.file(`ERRO_NFe_${nfe.number}.txt`, `Falha ao gerar PDF: ${error.message}`);
         }
     }

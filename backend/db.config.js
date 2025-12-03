@@ -3,10 +3,10 @@ const { Pool } = require('pg');
 
 // Usa variáveis de ambiente ou valores padrão para facilitar o setup inicial
 const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
+  user: process.env.DB_USER || 'portal_user',
   host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'nfe_portal',
-  password: process.env.DB_PASSWORD || 'admin',
+  database: process.env.DB_NAME || 'portal_transportador',
+  password: process.env.DB_PASSWORD || 'orga3000.',
   port: parseInt(process.env.DB_PORT || '5432', 10),
 });
 

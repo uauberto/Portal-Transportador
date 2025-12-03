@@ -22,13 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Arquivos de deploy e ambiente
-.env.local
-.env.local.backup
-deploy.sh
-
-# Build e logs
-*.log
-.next
-node_modules
