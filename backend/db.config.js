@@ -1,14 +1,12 @@
 const { Pool } = require('pg');
 
-// --- IMPORTANTE ---
-// Substitua os detalhes abaixo pela configuração do seu banco de dados PostgreSQL.
-// Recomenda-se o uso de variáveis de ambiente para estas configurações em produção.
+// Usa variáveis de ambiente ou valores padrão
 const pool = new Pool({
-  user: 'postgres',         // Seu usuário do PostgreSQL
-  host: 'localhost',        // Host do banco de dados
-  database: 'nfe_portal',   // Nome do banco de dados que você criou
-  password: 'your_password', // Sua senha do PostgreSQL
-  port: 5432,               // Porta padrão do PostgreSQL
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
 });
 
 pool.on('connect', () => {
